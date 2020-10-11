@@ -1,0 +1,63 @@
+name: Ubuntu
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run:
+    name: Run
+    runs-on: ubuntu-latest
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+      GOFLAGS: '-trimpath -mod=readonly'
+    strategy:
+      fail-fast: false
+      matrix:
+        go:
+          - 1.15.x
+        goos:
+          - linux
+        goarch:
+          - amd64
+        main:
+          - genji
+          - genji/fuzz
+          - genji/cmd/genji
+          - genji/engine/badgerengine
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          path: genji
+
+      - name: Checkout corpus
+        uses: actions/checkout@v2
+        with:
+          repository: genjidb/go-fuzz-corpus
+          path: genji/fuzz/testdata/fuzz
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Get cache path
+        run: echo "::set-output name=dir::$(go env GOMODCACHE)"
+        id: modcache
+
+      - name: Set up cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.modcache.outputs.dir }}
+          key: modcache-${{ matrix.goos }}-${{ matrix.goarch }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: modcache-
+
+      - name: Download dependencies
+        run: go mod download
+        working-directory: ${{ matrix.main }}
+
+      - name: Run tests
+        run: go test -race -v ./...
+        working-directory: ${{ matrix.main }}
