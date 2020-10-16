@@ -39,12 +39,9 @@ jobs:
         uses: actions/github-script@v3
         with:
           script: |
-            const { spawn } = require('child_process')
-
             // Set -race flag for supported targets.
             switch (process.env.GOARCH) {
             case 'amd64':
-            case 'ppc64le':
             case 'arm64':
               core.exportVariable('GOFLAGS', `${process.env.GOFLAGS} -race`)
               core.exportVariable('CGO_ENABLED', '1')
@@ -55,26 +52,70 @@ jobs:
               break
             }
 
+            const { spawnSync, execSync } = require('child_process')
+            const https = require('https')
+            const fs = require('fs')
+
+            const sudo = (args) => {
+              const ret = spawnSync('sudo', args, {
+                stdio: 'inherit',
+              })
+              if (ret.status !== 0) {
+                throw `exit code ${ret.status}`
+              }
+              return ret
+            }
+
             // Install QEMU and GCC cross compiler. We only need that for -race flag.
-            const apt = ['apt-get', 'install', '-y', '--no-install-recommends']
-            apt.push('qemu-user')
-            apt.push('qemu-user-binfmt')
+            const packages = ['qemu-user', 'qemu-user-binfmt']
             switch (process.env.GOARCH) {
             case 'arm':
-              break
+              // No Cgo here.
             case 'arm64':
-              apt.push('gcc-aarch64-linux-gnu')
-              apt.push('libc6-dev-arm64-cross')
+              sudo(['dpkg', '--add-architecture', 'arm64'])
+              sudo(['apt-get', 'update'])
+              packages.push('gcc-aarch64-linux-gnu')
+              packages.push('libc6-dev-arm64-cross')
+              packages.push('libtsan0-arm64-cross')
+              packages.push('libc6:arm64')
               core.exportVariable('CC', 'aarch64-linux-gnu-gcc')
-              core.exportVariable('PKG_CONFIG_PATH', '/usr/lib/aarch64-linux-gnu/pkgconfig')
+              core.exportVariable('PKG_CONFIG_PATH', `/usr/lib/aarch64-linux-gnu/pkgconfig`)
               break
             default:
-              return
+              return // GOARCH is supported by the host
             }
-            const rc = await spawn('sudo', apt, { stdio: 'inherit' })
-            if (rc.status || rc.error) {
-              process.exit(1)
+            sudo(['apt-get', 'install', '-y', '--no-install-recommends', ...packages])
+
+            if (process.env.CGO_ENABLED != '1') {
+              return // Cgo disabled, don’t download runtime.
             }
+
+            // Prebuilt Go releases do not contain race runtime for non-host architectures.
+            // Download syso object for the latest known release and place it in GOROOT.
+            const tpl = `
+              {{- $v := "master" -}}
+              {{- range context.ReleaseTags -}}
+                {{- $v = . -}}
+              {{- end -}}
+              {{- $v -}}
+            `
+            const args = ['list', '-f', tpl, 'runtime/race']
+            const goVersion = spawnSync('go', args).stdout.toString()
+
+            const goroot = execSync('go env GOROOT').toString().trim()
+
+            const sysoName = `race_${process.env.GOOS}_${process.env.GOARCH}.syso`
+            const sysoPath = `src/runtime/race/${sysoName}`
+            const sysoURL = `https://ghcdn.rawgit.org/golang/go/${goVersion}/${sysoPath}`
+
+            core.info(`Downloading ${sysoName} from ${sysoURL}`)
+
+            const dest = fs.createWriteStream(`${goroot}/${sysoPath}`)
+            https.get(sysoURL, (resp) => {
+              resp.pipe(dest)
+            }).on('error', (err) => {
+              core.setFailed(`download race runtime: ${err}`)
+            })
 
       - name: Get cache path
         run: echo "::set-output name=dir::$(go env GOMODCACHE)"
