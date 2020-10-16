@@ -66,7 +66,7 @@ jobs:
             default:
               return
             }
-            const rc = await spawn('sudo', apt)
+            const rc = await spawn('sudo', apt, { stdio: 'inherit' })
             if (rc.status || rc.error) {
               process.exit(1)
             }
