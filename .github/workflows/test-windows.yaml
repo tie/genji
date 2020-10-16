@@ -43,9 +43,11 @@ jobs:
             case 'amd64':
               console.log(`::set-env name=GOFLAGS::${process.env.GOFLAGS} -race`)
               console.log('::set-env name=CGO_ENABLED::1')
+              break
             default:
               console.log('::set-env name=CGO_ENABLED::0')
               console.log('::set-env name=GO_EXTLINK_ENABLED::0')
+              break
             }
 
       - name: Get cache path
