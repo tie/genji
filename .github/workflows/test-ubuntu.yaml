@@ -60,8 +60,11 @@ jobs:
             apt.push('qemu-user')
             apt.push('qemu-user-binfmt')
             switch (process.env.GOARCH) {
+            case 'arm':
+              break
             case 'arm64':
               apt.push('gcc-aarch64-linux-gnu')
+              core.exportVariable('CC', 'aarch64-linux-gnu-gcc')
               break
             default:
               return
