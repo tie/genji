@@ -1,0 +1,63 @@
+name: Upload Release
+on:
+  release:
+    types: [published]
+
+jobs:
+  run:
+    name: Run
+    runs-on: ubuntu-latest
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+      # Set up for reproducible builds
+      CGO_ENABLED: '0'
+      GO_EXTLINK_ENABLED: '0'
+      GOFLAGS: '-trimpath'
+      GO111MODULE: 'on'
+    strategy:
+      fail-fast: false
+      matrix:
+        go:
+          - 1.15.3
+        goos:
+          - linux
+          - darwin
+          - windows
+        goarch:
+          - amd64
+        cmd:
+          - genji
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Get GOEXE suffix
+        run: echo "::set-output name=suffix::$(go env GOEXE)"
+        id: exe
+
+      - name: Get cache path
+        run: echo "::set-output name=dir::$(go env GOMODCACHE)"
+        id: modcache
+
+      - name: Set up cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.modcache.outputs.dir }}
+          key: modcache-${{ matrix.goos }}_${{ matrix.goarch }}
+          restore-keys: modcache-
+
+      - name: Build release
+        run: go get -u github.com/genjidb/genji/cmd/${{ matrix.cmd }}@${{ github.event.release.tag_name }}
+        env:
+          GOBIN: ${{ github.workspace }}
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ matrix.cmd }}${{ steps.exe.outputs.suffix }}
+          asset_name: ${{ matrix.cmd }}_${{ matrix.goos }}_${{ matrix.goarch }}${{ steps.exe.outputs.suffix }}
+          asset_content_type: application/octet-stream

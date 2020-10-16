@@ -1,0 +1,60 @@
+name: Draft Release
+on:
+  push:
+    tags:
+      - v*
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Base version'
+      version:
+        description: 'New version'
+
+jobs:
+  run:
+    name: Run
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: 'on'
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+
+      - name: Get cache path
+        run: echo "::set-output name=dir::$(go env GOMODCACHE)"
+        id: modcache
+
+      - name: Set up cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.modcache.outputs.dir }}
+          key: modcache-${{ hashFiles('**/go.sum') }}
+          restore-keys: modcache-
+
+      - name: Install x/exp/cmd/gorelease
+        run: go get -u golang.org/x/exp/cmd/gorelease@v0.0.0-20201008143054-e3b2a7f2fdc7
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Check version
+        run: gorelease -base=${{ github.event.inputs.base }} -version=${{ github.event.inputs.version }} | tee changelog.txt
+        continue-on-error: true
+
+      - name: Amend changelog
+        id: changelog
+        run: |
+          perl -n -e '
+            if (s/^Suggested version: (.*)/::set-output name=version::$1/) { print }
+            if (s/^(.*) is a valid semantic version for this release.$/::set-output name=version::$1/) { print }
+          ' changelog.txt
+          perl -0pi -e 's/(\n.+)+\n+$//' changelog.txt
+
+      - name: Create release
+        uses: actions/create-release@v1
+        with:
+          draft: true
+          tag_name: ${{ steps.changelog.outputs.version }}
+          release_name: Release ${{ steps.changelog.outputs.version }}
+          body_path: changelog.txt
+          prerelease: ${{ contains(steps.changelog.outputs.version, '-') }}
