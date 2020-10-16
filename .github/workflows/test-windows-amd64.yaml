@@ -1,4 +1,4 @@
-name: Windows
+name: Test on windows/amd64
 on:
   push:
   pull_request:
@@ -8,21 +8,12 @@ jobs:
   run:
     name: Run
     runs-on: windows-latest
-    env:
-      GOOS: ${{ matrix.goos }}
-      GOARCH: ${{ matrix.goarch }}
-      GOFLAGS: '-trimpath -mod=readonly'
-      GO111MODULE: 'on'
-      CGO_ENABLED: '1'
     strategy:
       fail-fast: false
       matrix:
         go:
+          - 1.14.x
           - 1.15.x
-        goos:
-          - windows
-        goarch:
-          - amd64
         main:
           - genji
           - genji/fuzz
@@ -38,27 +29,42 @@ jobs:
         uses: actions/github-script@v3
         with:
           script: |
-            // Set -race flag for supported targets.
-            switch (process.env.GOARCH) {
-            case 'amd64':
-              core.exportVariable('GOFLAGS', `${process.env.GOFLAGS} -race`)
-              core.exportVariable('CGO_ENABLED', '1')
-              break
-            default:
-              core.exportVariable('CGO_ENABLED', '0')
-              core.exportVariable('GO_EXTLINK_ENABLED', '0')
-              break
-            }
+            const { execFileSync } = require('child_process')
+            const path = require('path')
 
-      - name: Get cache path
-        run: echo "::set-output name=dir::$(go env GOMODCACHE)"
-        id: modcache
+            // Set up Go environment variables.
+
+            core.exportVariable('GOOS', 'windows')
+            core.exportVariable('GOARCH', 'amd64')
+            core.exportVariable('GOFLAGS', '-trimpath -mod=readonly')
+
+            // Get a list of go release tags.
+
+            const releaseTags = execFileSync('go', [
+              'list', '-f', '{{context.ReleaseTags}}', 'runtime',
+            ]).toString().split(' ')
+
+            // Export cache paths for further steps.
+
+            const buildCache = execFileSync('go', ['env', 'GOCACHE']).toString().trim()
+            core.exportVariable('GOCACHE', buildCache)
+
+            if (releaseTags.includes('go1.15')) {
+              const modcache = execFileSync('go', ['env', 'GOMODCACHE']).toString().trim()
+              core.exportVariable('GOMODCACHE', modcache)
+            } else {
+              const gopath = execFileSync('go', ['env', 'GOPATH']).toString().trim()
+              const modcache = path.join(gopath, 'pkg', 'mod')
+              core.exportVariable('GOMODCACHE', modcache)
+            }
 
       - name: Set up cache
         uses: actions/cache@v2
         with:
-          path: ${{ steps.modcache.outputs.dir }}
-          key: modcache-${{ matrix.goos }}-${{ matrix.goarch }}-${{ hashFiles('**/go.sum') }}
+          path: |
+            ${{ env.GOMODCACHE }}
+            ${{ env.GOCACHE }}
+          key: modcache-${{ env.GOOS }}-${{ env.GOARCH }}-${{ hashFiles('**/go.sum') }}
           restore-keys: modcache-
 
       - name: Checkout code

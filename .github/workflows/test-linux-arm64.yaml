@@ -1,0 +1,135 @@
+name: Test on linux/arm64
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run:
+    name: Run
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go:
+          - 1.14.x
+          - 1.15.x
+        main:
+          - genji
+          - genji/fuzz
+          - genji/cmd/genji
+          - genji/engine/badgerengine
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Set up environment
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const { execFileSync } = require('child_process')
+            const https = require('https')
+            const fs = require('fs')
+            const path = require('path')
+
+            // Set up Go environment variables.
+
+            core.exportVariable('GOOS', 'linux')
+            core.exportVariable('GOARCH', 'arm64')
+            core.exportVariable('GOFLAGS', '-trimpath -mod=readonly')
+
+            // Enable Cgo for -race flag since we are cross compiling.
+
+            core.exportVariable('CGO_ENABLED', '1')
+            core.exportVariable('CC', 'aarch64-linux-gnu-gcc')
+            core.exportVariable('PKG_CONFIG_PATH', `/usr/lib/aarch64-linux-gnu/pkgconfig`)
+
+            // Get a list of go release tags.
+
+            const releaseTags = execFileSync('go', [
+              'list', '-f', '{{context.ReleaseTags}}', 'runtime',
+            ]).toString().split(' ')
+
+            // Export cache paths for further steps.
+
+            const buildCache = execFileSync('go', ['env', 'GOCACHE']).toString().trim()
+            core.exportVariable('GOCACHE', buildCache)
+
+            if (releaseTags.includes('go1.15')) {
+              const modcache = execFileSync('go', ['env', 'GOMODCACHE']).toString().trim()
+              core.exportVariable('GOMODCACHE', modcache)
+            } else {
+              const gopath = execFileSync('go', ['env', 'GOPATH']).toString().trim()
+              const modcache = path.join(gopath, 'pkg', 'mod')
+              core.exportVariable('GOMODCACHE', modcache)
+            }
+
+            // Install QEMU and GCC cross compiler.
+
+            const rc = execFileSync('sudo', [
+              'apt-get', 'install',
+              '--no-install-recommends', '-y',
+              'qemu-user',
+              'qemu-user-binfmt',
+              'gcc-aarch64-linux-gnu',
+              'libc6-dev-arm64-cross',
+              'libtsan0-arm64-cross',
+            ], {
+              stdio: 'inherit',
+            })
+
+            // Prebuilt Go releases do not contain race detector runtime for non-host architectures.
+            // Download syso object for the latest known major release and place it in GOROOT.
+
+            const latestReleaseTag = releaseTags[releaseTags.length-1]
+
+            const goroot = execFileSync('go', ['env', 'GOROOT']).toString().trim()
+
+            const sysoName = `race_${goos}_${goarch}.syso`
+            const sysoPath = `src/runtime/race/${sysoName}`
+            const sysoDest = `${goroot}/${sysoPath}`
+            const sysoURL = 'https://ghcdn.rawgit.org/golang/go'
+                          + `/${latestReleaseTag}/${sysoPath}`
+
+            core.info(`Downloading ${sysoName} to ${sysoDest} from ${sysoURL}`)
+            https.get(sysoURL, (resp) => {
+              const dest = fs.createWriteStream(sysoDest)
+              resp.pipe(dest)
+            }).on('error', (err) => {
+              core.setFailed(`download race runtime: ${err}`)
+            })
+
+      - name: Set up cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ env.GOMODCACHE }}
+            ${{ env.GOCACHE }}
+          key: modcache-${{ env.GOOS }}-${{ env.GOARCH }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: modcache-
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          path: genji
+
+      - name: Checkout corpus
+        uses: actions/checkout@v2
+        with:
+          repository: genjidb/go-fuzz-corpus
+          path: genji/fuzz/testdata/fuzz
+
+      - name: Download dependencies
+        run: go mod download
+        working-directory: ${{ matrix.main }}
+
+      - name: Run tests
+        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic -timeout=2m ./...
+        working-directory: ${{ matrix.main }}
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v1
+        with:
+          directory: ${{ matrix.main }}

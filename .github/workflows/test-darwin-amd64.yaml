@@ -1,0 +1,92 @@
+name: Test on darwin/amd64
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run:
+    name: Run
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go:
+          - 1.14.x
+          - 1.15.x
+        main:
+          - genji
+          - genji/fuzz
+          - genji/cmd/genji
+          - genji/engine/badgerengine
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Set up environment
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const { execFileSync } = require('child_process')
+            const path = require('path')
+
+            // Set up Go environment variables.
+
+            core.exportVariable('GOOS', 'linux')
+            core.exportVariable('GOARCH', 'amd64')
+            core.exportVariable('GOFLAGS', '-trimpath -mod=readonly')
+
+            // Get a list of go release tags.
+
+            const releaseTags = execFileSync('go', [
+              'list', '-f', '{{context.ReleaseTags}}', 'runtime',
+            ]).toString().split(' ')
+
+            // Export cache paths for further steps.
+
+            const buildCache = execFileSync('go', ['env', 'GOCACHE']).toString().trim()
+            core.exportVariable('GOCACHE', buildCache)
+
+            if (releaseTags.includes('go1.15')) {
+              const modcache = execFileSync('go', ['env', 'GOMODCACHE']).toString().trim()
+              core.exportVariable('GOMODCACHE', modcache)
+            } else {
+              const gopath = execFileSync('go', ['env', 'GOPATH']).toString().trim()
+              const modcache = path.join(gopath, 'pkg', 'mod')
+              core.exportVariable('GOMODCACHE', modcache)
+            }
+
+      - name: Set up cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ env.GOMODCACHE }}
+            ${{ env.GOCACHE }}
+          key: modcache-${{ env.GOOS }}-${{ env.GOARCH }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: modcache-
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          path: genji
+
+      - name: Checkout corpus
+        uses: actions/checkout@v2
+        with:
+          repository: genjidb/go-fuzz-corpus
+          path: genji/fuzz/testdata/fuzz
+
+      - name: Download dependencies
+        run: go mod download
+        working-directory: ${{ matrix.main }}
+
+      - name: Run tests
+        run: go test -v -coverprofile=coverage.txt -covermode=atomic -timeout=2m ./...
+        working-directory: ${{ matrix.main }}
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v1
+        with:
+          directory: ${{ matrix.main }}
