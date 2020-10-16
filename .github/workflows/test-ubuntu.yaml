@@ -13,7 +13,6 @@ jobs:
       GOARCH: ${{ matrix.goarch }}
       GOFLAGS: '-trimpath -mod=readonly'
       GO111MODULE: 'on'
-      CGO_ENABLED: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -23,12 +22,47 @@ jobs:
           - linux
         goarch:
           - amd64
+          - arm
+          - arm64
         main:
           - genji
           - genji/fuzz
           - genji/cmd/genji
           - genji/engine/badgerengine
     steps:
+      - name: Set up multiarch support
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const { spawn } = require('child_process')
+
+            // Set -race flag for supported targets.
+            switch (process.env.GOARCH) {
+            case 'amd64'
+            case 'ppc64le':
+            case 'arm64':
+              console.log('::set-env name=GOFLAGS::${process.env.GOFLAGS} -race')
+              console.log('::set-env name=CGO_ENABLED::1')
+            default:
+              console.log('::set-env name=CGO_ENABLED::0')
+              console.log('::set-env name=GO_EXTLINK_ENABLED::0')
+            }
+
+            const apt = ['apt-get', 'install', '-y', '--no-install-recommends']
+            apt.push('qemu-user')
+            apt.push('qemu-user-binfmt')
+            switch (process.env.GOARCH) {
+            case 'arm64':
+              apt.push('gcc-aarch64-linux-gnu')
+              break
+            default:
+              return
+            }
+            const rc = await spawn('sudo', apt)
+            if (rc.status || rc.error) {
+              process.exit(1)
+            }
+
       - name: Checkout code
         uses: actions/checkout@v2
         with:
@@ -61,7 +95,7 @@ jobs:
         working-directory: ${{ matrix.main }}
 
       - name: Run tests
-        run: go test -v -race -cover -coverprofile=coverage.txt -covermode=atomic -timeout=2m ./...
+        run: go test -v -coverprofile=coverage.txt -covermode=atomic -timeout=2m ./...
         working-directory: ${{ matrix.main }}
 
       - name: Upload coverage

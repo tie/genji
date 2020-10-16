@@ -13,7 +13,6 @@ jobs:
       GOARCH: ${{ matrix.goarch }}
       GOFLAGS: '-trimpath -mod=readonly'
       GO111MODULE: 'on'
-      CGO_ENABLED: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -29,6 +28,20 @@ jobs:
           - genji/cmd/genji
           - genji/engine/badgerengine
     steps:
+      - name: Set up multiarch support
+        uses: actions/github-script@v3
+        with:
+          script: |
+            // Set -race flag for supported targets.
+            switch (process.env.GOARCH) {
+            case 'amd64':
+              console.log('::set-env name=GOFLAGS::=${process.env.GOFLAGS} -race')
+              console.log('::set-env name=CGO_ENABLED::1')
+            default:
+              console.log('::set-env name=CGO_ENABLED::0')
+              console.log('::set-env name=GO_EXTLINK_ENABLED::0')
+            }
+
       - name: Checkout code
         uses: actions/checkout@v2
         with:
@@ -61,7 +74,7 @@ jobs:
         working-directory: ${{ matrix.main }}
 
       - name: Run tests
-        run: go test -v -race -cover -coverprofile=coverage.txt -covermode=atomic -timeout=2m ./...
+        run: go test -v -coverprofile=coverage.txt -covermode=atomic -timeout=2m ./...
         working-directory: ${{ matrix.main }}
 
       - name: Upload coverage

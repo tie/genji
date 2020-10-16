@@ -29,6 +29,20 @@ jobs:
           - genji/cmd/genji
           - genji/engine/badgerengine
     steps:
+      - name: Set up multiarch support
+        uses: actions/github-script@v3
+        with:
+          script: |
+            // Set -race flag for supported targets.
+            switch (process.env.GOARCH) {
+            case 'amd64':
+              console.log('::set-env name=GOFLAGS::=${process.env.GOFLAGS} -race')
+              console.log('::set-env name=CGO_ENABLED::1')
+            default:
+              console.log('::set-env name=CGO_ENABLED::0')
+              console.log('::set-env name=GO_EXTLINK_ENABLED::0')
+            }
+
       - name: Checkout code
         uses: actions/checkout@v2
         with:
@@ -64,7 +78,7 @@ jobs:
         # FIXME running with -coverprofile=coverage.txt prints an error; looks like a Go bug.
         # > cannot find module providing package .txt: import lookup disabled by -mod=readonly
         run: |
-          go test -v -race -cover -coverprofile=coverage -covermode=atomic -timeout=2m ./...
+          go test -v -coverprofile=coverage -covermode=atomic -timeout=2m ./...
           mv coverage coverage.txt
         working-directory: ${{ matrix.main }}
 
