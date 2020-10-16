@@ -13,6 +13,7 @@ jobs:
       GOARCH: ${{ matrix.goarch }}
       GOFLAGS: '-trimpath -mod=readonly'
       GO111MODULE: 'on'
+      CGO_ENABLED: '1'
     strategy:
       fail-fast: false
       matrix:
