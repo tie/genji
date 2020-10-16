@@ -59,5 +59,7 @@ jobs:
         working-directory: ${{ matrix.main }}
 
       - name: Run tests
-        run: go test -race -cover -coverprofile=coverage.txt -covermode=atomic -timeout=2m ./...
+        # FIXME running with -coverprofile=coverage.txt prints an error; looks like a Go bug.
+        # > cannot find module providing package .txt: import lookup disabled by -mod=readonly
+        run: go test -race -cover -coverprofile=coverage -covermode=atomic -timeout=2m ./...
         working-directory: ${{ matrix.main }}
