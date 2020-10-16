@@ -30,7 +30,12 @@ jobs:
           - genji/cmd/genji
           - genji/engine/badgerengine
     steps:
-      - name: Set up multiarch support
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Set up environment
         uses: actions/github-script@v3
         with:
           script: |
@@ -38,10 +43,10 @@ jobs:
 
             // Set -race flag for supported targets.
             switch (process.env.GOARCH) {
-            case 'amd64'
+            case 'amd64':
             case 'ppc64le':
             case 'arm64':
-              console.log('::set-env name=GOFLAGS::${process.env.GOFLAGS} -race')
+              console.log(`::set-env name=GOFLAGS::${process.env.GOFLAGS} -race`)
               console.log('::set-env name=CGO_ENABLED::1')
             default:
               console.log('::set-env name=CGO_ENABLED::0')
@@ -63,22 +68,6 @@ jobs:
               process.exit(1)
             }
 
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          path: genji
-
-      - name: Checkout corpus
-        uses: actions/checkout@v2
-        with:
-          repository: genjidb/go-fuzz-corpus
-          path: genji/fuzz/testdata/fuzz
-
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go }}
-
       - name: Get cache path
         run: echo "::set-output name=dir::$(go env GOMODCACHE)"
         id: modcache
@@ -89,6 +78,17 @@ jobs:
           path: ${{ steps.modcache.outputs.dir }}
           key: modcache-${{ matrix.goos }}-${{ matrix.goarch }}-${{ hashFiles('**/go.sum') }}
           restore-keys: modcache-
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          path: genji
+
+      - name: Checkout corpus
+        uses: actions/checkout@v2
+        with:
+          repository: genjidb/go-fuzz-corpus
+          path: genji/fuzz/testdata/fuzz
 
       - name: Download dependencies
         run: go mod download
