@@ -64,6 +64,7 @@ jobs:
               break
             case 'arm64':
               apt.push('gcc-aarch64-linux-gnu')
+              apt.push('libc6-dev-arm64-cross')
               core.exportVariable('CC', 'aarch64-linux-gnu-gcc')
               core.exportVariable('PKG_CONFIG_PATH', '/usr/lib/aarch64-linux-gnu/pkgconfig')
               break
