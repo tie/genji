@@ -62,3 +62,8 @@ jobs:
       - name: Run tests
         run: go test -v -race -cover -coverprofile=coverage.txt -covermode=atomic -timeout=2m ./...
         working-directory: ${{ matrix.main }}
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v1
+        with:
+          directory: ${{ matrix.main }}

@@ -66,3 +66,8 @@ jobs:
           go test -v -race -cover -coverprofile=coverage -covermode=atomic -timeout=2m ./...
           mv coverage coverage.txt
         working-directory: ${{ matrix.main }}
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v1
+        with:
+          directory: ${{ matrix.main }}
