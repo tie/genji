@@ -134,7 +134,7 @@ jobs:
         working-directory: ${{ matrix.main }}
 
       - name: Run tests
-        run: go test -v -coverprofile=coverage.txt -covermode=atomic -timeout=2m ./...
+        run: go test -v -coverprofile=coverage.txt -covermode=atomic -timeout=5m ./...
         working-directory: ${{ matrix.main }}
 
       - name: Upload coverage
