@@ -57,8 +57,10 @@ jobs:
             // Get a list of go release tags.
 
             const releaseTags = execFileSync('go', [
-              'list', '-f', '{{context.ReleaseTags}}', 'runtime',
-            ]).toString().split(' ')
+              'list', '-f',
+              '{{range context.ReleaseTags}}{{println .}}{{end}}',
+              'runtime',
+            ]).toString().split(/\r?\n/)
 
             // Export cache paths for further steps.
 
