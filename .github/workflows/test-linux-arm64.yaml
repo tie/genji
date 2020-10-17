@@ -92,7 +92,7 @@ jobs:
 
             const goroot = execFileSync('go', ['env', 'GOROOT']).toString().trim()
 
-            const sysoName = `race_${goos}_${goarch}.syso`
+            const sysoName = `race_${process.env.GOOS}_${process.env.GOARCH}.syso`
             const sysoPath = `src/runtime/race/${sysoName}`
             const sysoDest = `${goroot}/${sysoPath}`
             const sysoURL = 'https://ghcdn.rawgit.org/golang/go'
