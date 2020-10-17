@@ -98,11 +98,14 @@ jobs:
             const sysoName = `race_${process.env.GOOS}_${process.env.GOARCH}.syso`
             const sysoPath = `src/runtime/race/${sysoName}`
             const sysoDest = `${goroot}/${sysoPath}`
-            const sysoURL = 'https://raw.github.com/golang/go'
+            const sysoURL = 'https://raw.githubusercontent.com/golang/go'
                           + `/${latestReleaseTag}/${sysoPath}`
 
             core.info(`Downloading ${sysoName} to ${sysoDest} from ${sysoURL}`)
             https.get(sysoURL, (resp) => {
+              if (resp.statusCode !== 200) {
+                core.setFailed(`download race runtime: ${resp.statusCode} ${resp.statusMessage}`)
+              }
               const dest = fs.createWriteStream(sysoDest)
               resp.pipe(dest)
             }).on('error', (err) => {
