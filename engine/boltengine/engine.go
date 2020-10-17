@@ -76,6 +76,10 @@ func (t *Transaction) GetStore(ctx context.Context, name []byte) (engine.Store, 
 		return nil, engine.ErrStoreNotFound
 	}
 
+	if v, ok := fillPercent(ctx); ok {
+		b.FillPercent = v
+	}
+
 	return &Store{
 		bucket: b,
 		tx:     t.tx,
