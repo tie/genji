@@ -89,7 +89,7 @@ jobs:
             })
 
             // Prebuilt Go releases do not contain race detector runtime for non-host architectures.
-            // Download syso object for the latest known major release and place it in GOROOT.
+            // Download syso object for the latest known **major** release and place it in GOROOT.
 
             const latestReleaseTag = releaseTags[releaseTags.length-1]
 
@@ -98,7 +98,7 @@ jobs:
             const sysoName = `race_${process.env.GOOS}_${process.env.GOARCH}.syso`
             const sysoPath = `src/runtime/race/${sysoName}`
             const sysoDest = `${goroot}/${sysoPath}`
-            const sysoURL = 'https://ghcdn.rawgit.org/golang/go'
+            const sysoURL = 'https://raw.github.com/golang/go'
                           + `/${latestReleaseTag}/${sysoPath}`
 
             core.info(`Downloading ${sysoName} to ${sysoDest} from ${sysoURL}`)
