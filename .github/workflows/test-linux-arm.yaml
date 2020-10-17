@@ -8,22 +8,16 @@ jobs:
   run:
     name: Run
     runs-on: ubuntu-latest
-    env:
-      GOOS: ${{ matrix.goos }}
-      GOARCH: ${{ matrix.goarch }}
-      GOARM: ${{ matrix.goarm }}
     strategy:
       fail-fast: false
       matrix:
         go:
           - 1.14.x
           - 1.15.x
-        goos:
-          - linux
-        goarch:
-          - armv5
-          - armv6
-          - armv7
+        platform:
+          - linux/armv5
+          - linux/armv6
+          - linux/armv7
         main:
           - genji
           - genji/fuzz
@@ -37,6 +31,8 @@ jobs:
 
       - name: Set up environment
         uses: actions/github-script@v3
+        env:
+          platform: ${{ matrix.platform }}
         with:
           script: |
             const { execFileSync } = require('child_process')
@@ -46,13 +42,16 @@ jobs:
 
             // Set up Go environment variables.
 
+            const [goos, goarch] = process.env.platform.split('/')
+            core.exportVariable('GOOS', goos)
+            core.exportVariable('GOARCH', goarch)
+
             core.exportVariable('GOFLAGS', '-trimpath -mod=readonly')
 
-            // Apply GOARCH/GOARM hack.
+            // Apply GOARCH/GOARM platform hack.
 
-            const [goarch, goarm] = process.env.GOARCH.split('v')
-            core.exportVariable('GOARCH', goarch)
-            core.exportVariable('GOARM', goarm)
+            core.exportVariable('GOARCH', 'arm')
+            core.exportVariable('GOARM', goarch.split('v').pop())
 
             // Get a list of go release tags.
 

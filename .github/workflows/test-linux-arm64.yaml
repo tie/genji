@@ -8,19 +8,14 @@ jobs:
   run:
     name: Run
     runs-on: ubuntu-latest
-    env:
-      GOOS: ${{ matrix.goos }}
-      GOARCH: ${{ matrix.goarch }}
     strategy:
       fail-fast: false
       matrix:
         go:
           - 1.14.x
           - 1.15.x
-        goos:
-          - linux
-        goarch:
-          - arm64
+        platform:
+          - linux/arm64
         main:
           - genji
           - genji/fuzz
@@ -34,6 +29,8 @@ jobs:
 
       - name: Set up environment
         uses: actions/github-script@v3
+        env:
+          platform: ${{ matrix.platform }}
         with:
           script: |
             const { execFileSync } = require('child_process')
@@ -42,6 +39,10 @@ jobs:
             const path = require('path')
 
             // Set up Go environment variables.
+
+            const [goos, goarch] = process.env.platform.split('/')
+            core.exportVariable('GOOS', goos)
+            core.exportVariable('GOARCH', goarch)
 
             core.exportVariable('GOFLAGS', '-race -trimpath -mod=readonly')
 
