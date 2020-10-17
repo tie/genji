@@ -8,12 +8,19 @@ jobs:
   run:
     name: Run
     runs-on: ubuntu-latest
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
     strategy:
       fail-fast: false
       matrix:
         go:
           - 1.14.x
           - 1.15.x
+        goos:
+          - linux
+        goarch:
+          - arm64
         main:
           - genji
           - genji/fuzz
@@ -36,9 +43,7 @@ jobs:
 
             // Set up Go environment variables.
 
-            core.exportVariable('GOOS', 'linux')
-            core.exportVariable('GOARCH', 'arm64')
-            core.exportVariable('GOFLAGS', '-trimpath -mod=readonly')
+            core.exportVariable('GOFLAGS', '-race -trimpath -mod=readonly')
 
             // Enable Cgo for -race flag since we are cross compiling.
 
@@ -126,7 +131,7 @@ jobs:
         working-directory: ${{ matrix.main }}
 
       - name: Run tests
-        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic -timeout=2m ./...
+        run: go test -v -coverprofile=coverage.txt -covermode=atomic -timeout=2m ./...
         working-directory: ${{ matrix.main }}
 
       - name: Upload coverage

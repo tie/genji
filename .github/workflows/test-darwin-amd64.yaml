@@ -8,12 +8,19 @@ jobs:
   run:
     name: Run
     runs-on: macos-latest
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
     strategy:
       fail-fast: false
       matrix:
         go:
           - 1.14.x
           - 1.15.x
+        goos:
+          - darwin
+        goarch:
+          - amd64
         main:
           - genji
           - genji/fuzz
@@ -34,9 +41,7 @@ jobs:
 
             // Set up Go environment variables.
 
-            core.exportVariable('GOOS', 'linux')
-            core.exportVariable('GOARCH', 'amd64')
-            core.exportVariable('GOFLAGS', '-trimpath -mod=readonly')
+            core.exportVariable('GOFLAGS', '-race -trimpath -mod=readonly')
 
             // Get a list of go release tags.
 
