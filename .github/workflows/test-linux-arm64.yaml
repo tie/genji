@@ -52,14 +52,6 @@ jobs:
             core.exportVariable('CC', 'aarch64-linux-gnu-gcc')
             core.exportVariable('PKG_CONFIG_PATH', '/usr/lib/aarch64-linux-gnu/pkgconfig')
 
-            // Apply program loader path hack.
-
-            const sysroot = '/usr/lib/aarch64-linux-gnu'
-            const ldso = '/lib/ld-linux-aarch64.so.1'
-            execFileSync('sudo', ['ln', '-s', sysroot+ldso, ldso], {
-              stdio: 'inherit',
-            })
-
             // Get a list of go release tags.
 
             const releaseTags = execFileSync('go', [
@@ -95,6 +87,10 @@ jobs:
             ], {
               stdio: 'inherit',
             })
+
+            // Pass target sysroot and program loader path to QEMU.
+
+            core.exportVariable('QEMU_LD_PREFIX', '/usr/lib/aarch64-linux-gnu')
 
             // Prebuilt Go releases do not contain race detector runtime for non-host architectures.
             // Download syso object for the latest known **major** release and place it in GOROOT.
