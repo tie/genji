@@ -46,19 +46,10 @@ jobs:
 
             core.exportVariable('GOFLAGS', '-race -trimpath -mod=readonly')
 
-            // Enable Cgo for -race flag since we are cross compiling.
+            // Enable Cgo explicitly for -race flag since we are cross compiling.
 
             core.exportVariable('CGO_ENABLED', '1')
             core.exportVariable('CC', 'aarch64-linux-gnu-gcc')
-            core.exportVariable('PKG_CONFIG_PATH', '/usr/lib/aarch64-linux-gnu/pkgconfig')
-
-            execFileSync('sudo', [
-              'ls',
-              '/usr/lib/aarch64-linux-gnu/pkgconfig',
-              '/usr/aarch64-linux-gnu/pkgconfig',
-            ], {
-              stdio: 'inherit',
-            })
 
             // Get a list of go release tags.
 
