@@ -44,7 +44,7 @@ jobs:
             core.exportVariable('GOOS', goos)
             core.exportVariable('GOARCH', goarch)
 
-            core.exportVariable('GOFLAGS', '-covermode=atomic -timeout=15m -trimpath -mod=readonly')
+            core.exportVariable('GOFLAGS', '-timeout=15m -trimpath -mod=readonly')
 
             // Get a list of go release tags.
 

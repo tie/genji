@@ -46,7 +46,7 @@ jobs:
             core.exportVariable('GOOS', goos)
             core.exportVariable('GOARCH', goarch)
 
-            core.exportVariable('GOFLAGS', '-covermode=atomic -trimpath -mod=readonly')
+            core.exportVariable('GOFLAGS', '-trimpath -mod=readonly')
 
             // Apply ${GOOS}/${GOARCH}v${GOARM} platform hack.
 
