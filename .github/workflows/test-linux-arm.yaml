@@ -111,7 +111,7 @@ jobs:
         working-directory: ${{ matrix.main }}
 
       - name: Run tests
-        run: go test -v -coverprofile=coverage.txt ./...
+        run: go test -coverprofile=coverage.txt ./...
         working-directory: ${{ matrix.main }}
 
       - name: Upload coverage
