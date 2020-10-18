@@ -44,7 +44,7 @@ jobs:
             core.exportVariable('GOOS', goos)
             core.exportVariable('GOARCH', goarch)
 
-            core.exportVariable('GOFLAGS', '-race -trimpath -mod=readonly')
+            core.exportVariable('GOFLAGS', '-race -covermode=atomic -trimpath -mod=readonly')
 
             // Enable Cgo explicitly for -race flag since we are cross compiling.
 
@@ -149,7 +149,7 @@ jobs:
         working-directory: ${{ matrix.main }}
 
       - name: Run tests
-        run: go test -v -coverprofile=coverage.txt -covermode=atomic -timeout=5m ./...
+        run: go test -v -coverprofile=coverage.txt ./...
         working-directory: ${{ matrix.main }}
 
       - name: Upload coverage

@@ -46,7 +46,7 @@ jobs:
             core.exportVariable('GOOS', goos)
             core.exportVariable('GOARCH', goarch)
 
-            core.exportVariable('GOFLAGS', '-trimpath -mod=readonly')
+            core.exportVariable('GOFLAGS', '-covermode=atomic -trimpath -mod=readonly')
 
             // Apply ${GOOS}/${GOARCH}v${GOARM} platform hack.
 
@@ -111,7 +111,7 @@ jobs:
         working-directory: ${{ matrix.main }}
 
       - name: Run tests
-        run: go test -v -coverprofile=coverage.txt -covermode=atomic -timeout=5m ./...
+        run: go test -v -coverprofile=coverage.txt ./...
         working-directory: ${{ matrix.main }}
 
       - name: Upload coverage
