@@ -94,7 +94,7 @@ jobs:
         # FIXME running with -coverprofile=coverage.txt prints an error; looks like a Go bug.
         # > cannot find module providing package .txt: import lookup disabled by -mod=readonly
         run: |
-          go test -coverprofile=coverage ./...
+          go test -v -coverprofile=coverage ./...
           mv coverage coverage.txt
         working-directory: ${{ matrix.main }}
 
