@@ -44,7 +44,7 @@ jobs:
             core.exportVariable('GOOS', goos)
             core.exportVariable('GOARCH', goarch)
 
-            core.exportVariable('GOFLAGS', '-race -covermode=atomic -trimpath -mod=readonly')
+            core.exportVariable('GOFLAGS', '-race -trimpath -mod=readonly')
 
             // Enable Cgo explicitly for -race flag since we are cross compiling.
 
@@ -73,22 +73,13 @@ jobs:
               core.exportVariable('GOMODCACHE', modcache)
             }
 
-            // Install QEMU.
+            // Install QEMU and GCC cross compiler.
 
             execFileSync('sudo', [
               'apt-get', 'install',
               '--no-install-recommends', '-y',
               'qemu-user',
               'qemu-user-binfmt',
-            ], {
-              stdio: 'inherit',
-            })
-
-            // Install GCC cross compiler.
-
-            execFileSync('sudo', [
-              'apt-get', 'install',
-              '--no-install-recommends', '-y',
               'gcc-powerpc64le-linux-gnu',
               'libc6-dev-ppc64el-cross',
               'libtsan0-ppc64el-cross',
@@ -117,6 +108,7 @@ jobs:
             https.get(sysoURL, (resp) => {
               if (resp.statusCode !== 200) {
                 core.setFailed(`download race runtime: ${resp.statusCode} ${resp.statusMessage}`)
+                return
               }
               const dest = fs.createWriteStream(sysoDest)
               resp.pipe(dest)
