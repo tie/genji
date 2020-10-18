@@ -50,7 +50,15 @@ jobs:
 
             core.exportVariable('CGO_ENABLED', '1')
             core.exportVariable('CC', 'aarch64-linux-gnu-gcc')
-            core.exportVariable('PKG_CONFIG_PATH', `/usr/lib/aarch64-linux-gnu/pkgconfig`)
+            core.exportVariable('PKG_CONFIG_PATH', '/usr/lib/aarch64-linux-gnu/pkgconfig')
+
+            // Apply program loader path hack.
+
+            const sysroot = '/usr/lib/aarch64-linux-gnu'
+            const ldso = '/lib/ld-linux-aarch64.so.1'
+            execFileSync('sudo', ['ln', '-s', sysroot+ldso, ldso], {
+              stdio: 'inherit',
+            })
 
             // Get a list of go release tags.
 
@@ -76,7 +84,7 @@ jobs:
 
             // Install QEMU and GCC cross compiler.
 
-            const rc = execFileSync('sudo', [
+            execFileSync('sudo', [
               'apt-get', 'install',
               '--no-install-recommends', '-y',
               'qemu-user',
