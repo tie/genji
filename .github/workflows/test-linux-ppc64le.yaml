@@ -44,7 +44,7 @@ jobs:
             core.exportVariable('GOOS', goos)
             core.exportVariable('GOARCH', goarch)
 
-            core.exportVariable('GOFLAGS', '-race -trimpath -mod=readonly')
+            core.exportVariable('GOFLAGS', '-race -exec=qemu-ppc64le -trimpath -mod=readonly')
 
             // Enable Cgo explicitly for -race flag since we are cross compiling.
 
@@ -79,7 +79,7 @@ jobs:
               'apt-get', 'install',
               '--no-install-recommends', '-y',
               'qemu-user',
-              'qemu-user-binfmt',
+              //'qemu-user-binfmt',
               'gcc-powerpc64le-linux-gnu',
               'libc6-dev-ppc64el-cross',
               'libtsan0-ppc64el-cross',
