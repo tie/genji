@@ -77,6 +77,16 @@ jobs:
               stdio: 'inherit',
             })
 
+            // Reset binfmt entries set up by apt.
+
+            execFileSync('docker', [
+              'run', '--privileged', '--rm',
+              'multiarch/qemu-user-static:register',
+              '--reset',
+            ], {
+              stdio: 'inherit',
+            })
+
       - name: Set up cache
         uses: actions/cache@v2
         with:
