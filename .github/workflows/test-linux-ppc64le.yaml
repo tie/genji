@@ -69,18 +69,13 @@ jobs:
             }
 
             // Install QEMU.
-            /*
             execFileSync('sudo', [
               'apt-get', 'install',
               '--no-install-recommends', '-y',
-              'qemu-user',
-              'qemu-user-binfmt',
+              'qemu-user-static',
             ], {
               stdio: 'inherit',
             })
-            */
-
-      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
       - name: Set up cache
         uses: actions/cache@v2
