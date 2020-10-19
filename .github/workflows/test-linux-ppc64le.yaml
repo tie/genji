@@ -7,7 +7,7 @@ on:
 jobs:
   run:
     name: Run
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -73,16 +73,6 @@ jobs:
               'apt-get', 'install',
               '--no-install-recommends', '-y',
               'qemu-user-static',
-            ], {
-              stdio: 'inherit',
-            })
-
-            // Reset binfmt entries set up by apt.
-
-            execFileSync('docker', [
-              'run', '--privileged', '--rm',
-              'multiarch/qemu-user-static:register',
-              '--reset',
             ], {
               stdio: 'inherit',
             })
