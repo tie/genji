@@ -69,7 +69,7 @@ jobs:
             }
 
             // Install QEMU.
-
+            /*
             execFileSync('sudo', [
               'apt-get', 'install',
               '--no-install-recommends', '-y',
@@ -78,6 +78,9 @@ jobs:
             ], {
               stdio: 'inherit',
             })
+            */
+
+      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
       - name: Set up cache
         uses: actions/cache@v2
@@ -104,7 +107,7 @@ jobs:
         working-directory: ${{ matrix.main }}
 
       - name: Run tests
-        run: go test -v -coverprofile=coverage.txt
+        run: go test -v -coverprofile=coverage.txt ./...
         working-directory: ${{ matrix.main }}
 
       - name: Upload coverage
