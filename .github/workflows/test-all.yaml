@@ -1,0 +1,66 @@
+name: Test all
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run:
+    name: Run
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        go:
+          - 1.14.x
+          - 1.15.x
+        platform:
+          - linux/ppc64le
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Checkout corpus
+        uses: actions/checkout@v2
+        with:
+          repository: genjidb/go-fuzz-corpus
+          path: fuzz/testdata/fuzz
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Set up environment
+        uses: actions/github-script@v3
+        env:
+          platform: ${{ matrix.platform }}
+        with:
+          script: |
+            const path = require('path')
+            const scriptName = path.join('.github', 'workflows', 'scripts', 'setup-env.js')
+            const scriptPath = path.join(process.env.GITHUB_WORKSPACE, scriptName)
+            const script = require(scriptPath)
+            return await script({ github, context, core, io })
+
+      - name: Set up cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ env.GOMODCACHE }}
+            ${{ env.GOCACHE }}
+          key: modcache-${{ env.GOOS }}-${{ env.GOARCH }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: modcache-
+
+      - name: Run tests
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const path = require('path')
+            const scriptName = path.join('.github', 'workflows', 'scripts', 'test-all.js')
+            const scriptPath = path.join(process.env.GITHUB_WORKSPACE, scriptName)
+            const script = require(scriptPath)
+            return await script({ github, context, core, io })
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v1
