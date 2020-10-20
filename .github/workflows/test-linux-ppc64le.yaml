@@ -94,7 +94,13 @@ jobs:
             // Prebuilt Go releases do not contain race detector runtime for non-host architectures.
             // Download syso object for the latest known **major** release and place it in GOROOT.
 
-            const latestReleaseTag = releaseTags[releaseTags.length-1]
+            const latestReleaseTag = (() => {
+              if (releaseTags.includes('go1.15') && process.env.platform == 'linux/ppc64le') {
+                // See https://github.com/golang/go/issues/42080
+                return 'go1.15rc1'
+              }
+              return releaseTags[releaseTags.length-1]
+            })()
 
             const goroot = execFileSync('go', ['env', 'GOROOT']).toString().trim()
 
