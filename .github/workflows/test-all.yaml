@@ -65,6 +65,7 @@ jobs:
             const scriptPath = path.join(process.env.GITHUB_WORKSPACE, scriptName)
             const script = require(scriptPath)
             return await script({ github, context, core, io })
+        timeout-minutes: 15
 
       - name: Upload coverage
         uses: codecov/codecov-action@v1
