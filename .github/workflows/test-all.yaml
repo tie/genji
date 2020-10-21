@@ -16,6 +16,9 @@ jobs:
           - 1.15.x
         platform:
           - linux/ppc64le
+          - linux/armv5
+          - linux/armv6
+          - linux/armv7
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

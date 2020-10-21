@@ -50,14 +50,33 @@ module.exports = async ({ core }) => {
   })
 
   await core.group('Run go test', async () => {
-    return await forEachModule('.', async (dir) => {
-      const race = []
-      const coverprofile = ['-coverprofile=coverage.txt']
+    const [goos, goarch] = execFileSync('go', [
+      'env', 'GOOS', 'GOARCH',
+    ]).toString().trim().split(/\r?\n/)
 
+    const enableRace = (() => {
+      switch (goos) {
+      case 'linux':
+        return goarch == 'amd64' || goarch == 'ppc64le' || goarch == 'arm64'
+      case 'freebsd':
+      case 'netbsd':
+      case 'darwin':
+      case 'windows':
+        return goarch == 'amd64'
+      default:
+        return false
+      }
+    })()
+
+    return await forEachModule('.', async (dir) => {
       const args = [
-        ...race,
-        ...coverprofile,
+        '-trimpath',
+        '-mod=readonly',
+        '-coverprofile=coverage.txt',
       ]
+      if (enableRace) {
+        args.push('-race')
+      }
       execFileSync('go', ['test', ...args, './...'], {
         stdio: 'inherit',
         cwd: dir,
