@@ -77,10 +77,14 @@ module.exports = async ({ core }) => {
       if (enableRace) {
         args.push('-race')
       }
-      execFileSync('go', ['test', ...args, './...'], {
-        stdio: 'inherit',
-        cwd: dir,
-      })
+      try {
+        execFileSync('go', ['test', ...args, './...'], {
+          stdio: 'inherit',
+          cwd: dir,
+        })
+      } catch (err) {
+        core.setFailed(`test ${dir}: ${err}`)
+      }
     })
   })
 }
