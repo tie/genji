@@ -93,6 +93,8 @@ module.exports = async ({ core }) => {
     ]
     if (enableRace) {
       args.push('-race')
+    } else {
+      args.push('-gcflags=all=-d=checkptr')
     }
     return await forEachModule('.', async (dir) => {
       try {
