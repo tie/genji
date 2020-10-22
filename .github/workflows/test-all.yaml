@@ -61,7 +61,7 @@ jobs:
   run:
     name: Run
     needs: prepare
-    timeout-minutes: 10
+    timeout-minutes: 5
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
