@@ -55,6 +55,18 @@ module.exports = async ({ core }) => {
     ]).toString().trim().split(/\r?\n/)
 
     const enableRace = (() => {
+      // Tests under QEMU user mode emulation fail with the following error:
+      // FATAL: ThreadSanitizer: unsupported VMA range
+      // FATAL: Found 39 - Supported 48
+      //
+      // Note that this may change in the next QEMU release.
+      // See https://wiki.qemu.org/ChangeLog/5.2#Arm
+      // Though this change seems to be related to system-mode emulation,
+      // which we haven’t tested yet.
+      if (goos == 'linux' && goarch == 'arm64' && process.env.QEMU_LD_PREFIX != '') {
+        core.exportVariable('CGO_ENABLED', '0')
+        return false
+      }
       switch (goos) {
       case 'linux':
         return goarch == 'amd64' || goarch == 'ppc64le' || goarch == 'arm64'
