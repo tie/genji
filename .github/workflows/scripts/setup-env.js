@@ -14,7 +14,7 @@ module.exports = async ({ core }) => {
     modCache,
   } = await core.group('Gather environment information', async () => {
     const [goos, goarch, goarm] = (() => {
-      const [goos, goarch] = process.env.platform.split('/', 2)
+      const [goos, goarch] = process.env.target.split('/', 2)
       if (goarch.startsWith('armv')) {
         // We have armv${GOARM} format.
         return [goos, ...goarch.split('v', 2)]
@@ -128,7 +128,7 @@ module.exports = async ({ core }) => {
     })
   }
 
-  // Prebuilt Go releases do not contain race detector runtime for non-host platforms.
+  // Prebuilt Go releases do not contain race detector runtime for non-host targets.
   if (enableRace && enableCross) {
     await core.group('Download race detector runtime', async () => {
       const sysoRef = (releaseTags.includes('go1.15') && goos == 'linux' && goarch == 'ppc64le')

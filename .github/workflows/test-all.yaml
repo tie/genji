@@ -5,22 +5,67 @@ on:
   workflow_dispatch:
 
 jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.result }}
+    steps:
+      - name: Prepare job matrix
+        id: matrix
+        uses: actions/github-script@v3
+        with:
+          script: |
+            // Default matrix is not powerful enough for what we are doing here.
+            // E.g. the following matrix results in [(ubuntu-latest, linux/amd64)].
+            //
+            //   runner:
+            //   - ubuntu-latest
+            //   include:
+            //   - runner: ubuntu-latest
+            //     target: linux/amd64
+            //   - runner: ubuntu-latest
+            //     target: linux/arm
+            //
+            // But we can include new combinations if the are no matches in the matrix.
+            // In a simple case like example above it’s enough to remove runner from
+            // initial matrix. Our case is more complicated, so we precompute cartesian
+            // products and pass the resulting matrix to the next job.
+
+            // https://stackoverflow.com/a/43053803
+            const cartesian =
+              (...a) => a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())))
+
+            const matrix = cartesian([
+              '1.15.x',
+              '1.14.x',
+            ], [
+              ...cartesian([
+                'ubuntu-20.04',
+              ], [
+                'linux/amd64',
+                'linux/ppc64le',
+                'linux/armv5',
+                'linux/armv6',
+                'linux/armv7',
+              ]),
+              ...cartesian([
+                'macos-latest',
+              ], [
+                'darwin/amd64',
+              ]),
+            ])
+            return {
+              include: matrix.map(([go, runner, target]) => ({ go, runner, target })),
+            }
   run:
     name: Run
-    runs-on: ubuntu-20.04
+    needs: prepare
     timeout-minutes: 10
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
-      matrix:
-        go:
-          - 1.14.x
-          - 1.15.x
-        platform:
-          - linux/amd64
-          - linux/ppc64le
-          - linux/armv5
-          - linux/armv6
-          - linux/armv7
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -39,7 +84,7 @@ jobs:
       - name: Set up environment
         uses: actions/github-script@v3
         env:
-          platform: ${{ matrix.platform }}
+          target: ${{ matrix.target }}
         with:
           script: |
             const path = require('path')
