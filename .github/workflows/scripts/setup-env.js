@@ -108,7 +108,7 @@ module.exports = async ({ core }) => {
     case 'ppc64le':
       return ['ppc64el', 'powerpc64le']
     default:
-      return ['', '']
+      return [goarch, goarch]
     }
   })()
 
