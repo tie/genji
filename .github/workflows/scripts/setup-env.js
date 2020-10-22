@@ -101,6 +101,17 @@ module.exports = async ({ core }) => {
     }
   })()
 
+  const [crossArchSystem, crossArchCC] = (() => {
+    switch (goarch) {
+    case 'arm64':
+      return ['arm64', 'aarch64']
+    case 'ppc64le':
+      return ['ppc64el', 'powerpc64le']
+    default:
+      return ['', '']
+    }
+  })()
+
   if (enableCross) {
     await core.group('Run apt install', async () => {
       // Install QEMU and C cross compiler.
@@ -109,9 +120,9 @@ module.exports = async ({ core }) => {
         'qemu-user-binfmt',
       ]
       const cc = enableRace ? [
-        'gcc-powerpc64le-linux-gnu',
-        'libc6-dev-ppc64el-cross',
-        'libtsan0-ppc64el-cross',
+        `gcc-${crossArchCC}-linux-gnu`,
+        `libc6-dev-${crossArchSystem}-cross`,
+        `libtsan0-${crossArchSystem}-cross`,
       ] : []
       execFileSync('sudo', [
         'apt-get', 'install',
@@ -159,10 +170,10 @@ module.exports = async ({ core }) => {
     // Enable Cgo explicitly for -race flag if we are cross compiling.
     if (enableCross && enableRace) {
       core.exportVariable('CGO_ENABLED', '1')
-      core.exportVariable('CC', 'powerpc64le-linux-gnu-gcc')
+      core.exportVariable('CC', `${crossArchCC}-linux-gnu-gcc`)
 
       // Pass target sysroot and program loader path to QEMU.
-      core.exportVariable('QEMU_LD_PREFIX', '/usr/powerpc64le-linux-gnu')
+      core.exportVariable('QEMU_LD_PREFIX', `/usr/${crossArchCC}-linux-gnu`)
     }
 
     // Export cache paths for actions/cache step.
