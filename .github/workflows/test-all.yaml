@@ -54,6 +54,11 @@ jobs:
               ], [
                 'darwin/amd64',
               ]),
+              ...cartesian([
+                'windows-latest',
+              ], [
+                'windows/amd64',
+              ]),
             ])
             return {
               include: matrix.map(([go, runner, target]) => ({ go, runner, target })),
