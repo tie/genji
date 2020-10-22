@@ -40,6 +40,12 @@ module.exports = async ({ core }) => {
     }
   }
 
+  await core.group('Run go env', async () => {
+    execFileSync('go', ['env'], {
+      stdio: 'inherit',
+    })
+  })
+
   await core.group('Run go mod download', async () => {
     return await forEachModule('.', async (dir) => {
       execFileSync('go', ['mod', 'download'], {
@@ -64,7 +70,7 @@ module.exports = async ({ core }) => {
       // Though this change seems to be related to system-mode emulation,
       // which we haven’t tested yet.
       if (goos == 'linux' && goarch == 'arm64' && process.env.QEMU_LD_PREFIX != '') {
-        core.exportVariable('CGO_ENABLED', '0')
+        delete process.env.CGO_ENABLED
         return false
       }
       switch (goos) {
@@ -80,15 +86,15 @@ module.exports = async ({ core }) => {
       }
     })()
 
+    const args = [
+      '-trimpath',
+      '-mod=readonly',
+      '-coverprofile=coverage.txt',
+    ]
+    if (enableRace) {
+      args.push('-race')
+    }
     return await forEachModule('.', async (dir) => {
-      const args = [
-        '-trimpath',
-        '-mod=readonly',
-        '-coverprofile=coverage.txt',
-      ]
-      if (enableRace) {
-        args.push('-race')
-      }
       try {
         execFileSync('go', ['test', ...args, './...'], {
           stdio: 'inherit',
