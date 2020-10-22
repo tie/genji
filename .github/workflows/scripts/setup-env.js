@@ -101,27 +101,22 @@ module.exports = async ({ core }) => {
     }
   })()
 
-  if (enableCross || enableRace) {
+  if (enableCross) {
     await core.group('Run apt install', async () => {
-      // Install QEMU and GCC cross compiler.
-      const packages = []
-      if (enableCross) {
-        packages.push(
-          'qemu-user',
-          'qemu-user-binfmt',
-        )
-      }
-      if (enableRace) {
-        packages.push(
-          'gcc-powerpc64le-linux-gnu',
-          'libc6-dev-ppc64el-cross',
-          'libtsan0-ppc64el-cross',
-        )
-      }
+      // Install QEMU and C cross compiler.
+      const qemu = [
+        'qemu-user',
+        'qemu-user-binfmt',
+      ]
+      const cc = enableRace ? [
+        'gcc-powerpc64le-linux-gnu',
+        'libc6-dev-ppc64el-cross',
+        'libtsan0-ppc64el-cross',
+      ] : []
       execFileSync('sudo', [
         'apt-get', 'install',
         '--no-install-recommends', '-y',
-        ...packages,
+        ...qemu, ...cc,
       ], {
         stdio: 'inherit',
       })
