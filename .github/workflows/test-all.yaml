@@ -62,7 +62,7 @@ jobs:
               ]),
             ])
             return {
-              include: matrix.map(([go, runner, target]) => ({ go, runner, target })),
+              include: matrix.map(([go, runner, target]) => ({ go, target, runner })),
             }
   run:
     name: Run
