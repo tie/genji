@@ -26,11 +26,6 @@ Generally, Genji should compile and run on any target supported by Go compiler (
 - Unlisted: same as “?”.
 - Empty cell: unsupported GOOS/GOARCH pair.
 
-#### Known quirks
-
-- engine/badgerengine tests fail on windows/* due to small initial pagefile size.
-  See https://github.community/t/17141
-
 ### Race detector matrix
 
 Tests are run with [race detector](https://golang.org/doc/articles/race_detector.html) enabled when possible.

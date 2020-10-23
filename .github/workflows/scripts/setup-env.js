@@ -1,6 +1,7 @@
 const { execFileSync } = require('child_process')
 const fs = require('fs')
 const https = require('https')
+const os = require('os')
 const path = require('path')
 
 module.exports = async ({ core }) => {
@@ -154,6 +155,46 @@ module.exports = async ({ core }) => {
       }).on('error', (err) => {
         core.setFailed(`download race runtime: ${err}`)
         process.exit()
+      })
+    })
+  }
+
+  // engine/badgerengine tests fail on windows due to small initial pagefile size.
+  // See https://github.community/t/17141
+  // See https://github.community/t/135280
+  if (process.platform == 'win32') {
+    // BUG async usage is a mess in the whole script. This group is the worst part.
+    await core.group('Resize pagefile.sys', async () => {
+      const scriptURL = 'https://raw.githubusercontent.com/al-cheb/configure-pagefile-action'
+                      + '/918dc4b31a503aac9d6b4861292369bf7e6072f5/scripts/SetPageFileSize.ps1'
+
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'httpdata'))
+      const scriptDest = path.join(tempDir, 'SetPageFileSize.ps1')
+
+      await new Promise(resolve => {
+        https.get(scriptURL, (resp) => {
+          if (resp.statusCode !== 200) {
+            core.setFailed(`download pagefile resize script: ${resp.statusCode} ${resp.statusMessage}`)
+            process.exit()
+          }
+
+          const dest = fs.createWriteStream(scriptDest)
+          resp.pipe(dest).on('finish', () => {
+            execFileSync('powershell', [
+              scriptDest,
+              '-MinimumSize', '8GB',
+              '-MaximumSize', '32GB',
+              '-DiskRoot', 'C:',
+            ], {
+              stdio: 'inherit',
+              timeout: 60 * 1000,
+            })
+            resolve()
+          })
+        }).on('error', (err) => {
+          core.setFailed(`download pagefile resize script: ${err}`)
+          process.exit()
+        })
       })
     })
   }
