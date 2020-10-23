@@ -5,7 +5,7 @@ const path = require('path')
 
 module.exports = async ({ core }) => {
   const {
-    distos, distarch,
+    hostos, hostarch,
     goos, goarch, goarm,
     goroot, gopath,
     releaseTags,
@@ -24,8 +24,8 @@ module.exports = async ({ core }) => {
 
     core.info(`Setting up for GOOS=${goos} GOARCH=${goarch} GOARM=${goarm}`)
 
-    const [goroot, gopath] = execFileSync('go', [
-      'env', 'GOROOT', 'GOPATH',
+    const [goroot, gopath, hostos, hostarch] = execFileSync('go', [
+      'env', 'GOROOT', 'GOPATH', 'GOHOSTOS', 'GOHOSTARCH',
     ]).toString().trim().split(/\r?\n/)
 
     const releaseTags = execFileSync('go', [
@@ -34,15 +34,12 @@ module.exports = async ({ core }) => {
       'runtime',
     ]).toString().trim().split(/\r?\n/)
 
-    const versionFields = execFileSync('go', [
-      'version',
-    ]).toString().trim().split(' ')
-
-    const [distos, distarch] = versionFields[versionFields.length-1].split('/')
-
     // Get Git tag or sha for Go release.
     const releaseRef = (() => {
-      const fields = versionFields.slice(2, -1)
+      const fields = execFileSync('go', [
+        'version',
+      ]).toString().trim().split(' ').slice(2, -1)
+
       // ['go1.14.9']
       if (fields.length == 1) {
         return fields[0]
@@ -67,7 +64,7 @@ module.exports = async ({ core }) => {
     })()
 
     return {
-      distos, distarch,
+      hostos, hostarch,
       goos, goarch, goarm,
       goroot, gopath,
       releaseTags,
@@ -78,13 +75,13 @@ module.exports = async ({ core }) => {
   })
 
   const enableCross = (() => {
-    if (distos != 'linux') {
+    if (hostos != 'linux') {
       return false
     }
-    if (distarch == 'amd64' && goarch == '386') {
+    if (hostarch == 'amd64' && goarch == '386') {
       return false
     }
-    return distos != goos || distarch != goarch
+    return hostos != goos || hostarch != goarch
   })()
 
   const enableRace = (() => {
