@@ -23,6 +23,7 @@
   - [Using the memory engine](#using-the-memory-engine)
   - [Using the Badger engine](#using-the-badger-engine)
 - [Genji shell](#genji-shell)
+- [Supported systems](#supported-systems)
 - [Contributing](#contributing)
 
 ## Introduction
@@ -285,6 +286,10 @@ genji my.db
 # Opening a Badger database:
 genji --badger pathToData
 ```
+
+## Supported systems
+
+See [TARGETS.md](TARGETS.md).
 
 ## Contributing
 
