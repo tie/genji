@@ -14,9 +14,9 @@ Generally, Genji should compile and run on any target supported by Go compiler (
 |                           mips64 |   ?   |         |        |    |
 |                         mips64le |   ?   |         |        |    |
 |                           mipsle |   ?   |         |        |    |
-|                            ppc64 |   ?   |         |        |    |
+|                            ppc64 |   ○   |         |        |    |
 |                          ppc64le |   ○   |         |        |    |
-|                          riscv64 |   ?   |         |        |    |
+|                          riscv64 |   ○   |         |        |    |
 |                            s390x |   ○   |         |        |    |
 |                             wasm |       |         |        |  ? |
 
