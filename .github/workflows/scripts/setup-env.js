@@ -103,6 +103,8 @@ module.exports = async ({ core }) => {
     switch (goarch) {
     case 'arm64':
       return ['arm64', 'aarch64']
+    case 'ppc64':
+      return ['powerpc', 'powerpc']
     case 'ppc64le':
       return ['ppc64el', 'powerpc64le']
     default:
