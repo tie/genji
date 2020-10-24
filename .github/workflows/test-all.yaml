@@ -65,8 +65,9 @@ jobs:
                 'windows/386',
               ]),
             ])
+            core.info(`Built matrix with ${matrix.length} jobs`)
             return {
-              include: matrix.map(([go, runner, target]) => ({ go, target, runner })),
+              include: matrix.map(([go, runner, target]) => ({ target, go, runner })),
             }
   run:
     name: Run
