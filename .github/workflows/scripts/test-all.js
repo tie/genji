@@ -8,11 +8,16 @@ module.exports = async ({ core }) => {
       withFileTypes: true,
     })
     dirents.sort((a, b) => {
+      if (a.name == 'go.mod' && a.isFile()) {
+        // Make go.mod first element to visit module
+        // before descending into subdirectories.
+        return -1
+      }
       if (a.name > b.name) {
-        return 1
+        return -1
       }
       if (a.name < b.name) {
-        return -1
+        return 1
       }
       return 0
     })
