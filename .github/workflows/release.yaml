@@ -116,7 +116,7 @@ jobs:
           cat changelog.txt >>release.txt
           echo >>release.txt
       - name: Upload artifact
-        uses: actions/upload-artifact@v2.2.3
+        uses: actions/upload-artifact@v2.2.4
         with:
           name: release.txt
           path: release.txt
@@ -220,7 +220,7 @@ jobs:
           echo >>release.txt
           cat engine/badgerengine/changelog.txt >>release.txt
       - name: Upload artifact
-        uses: actions/upload-artifact@v2.2.3
+        uses: actions/upload-artifact@v2.2.4
         with:
           name: release.txt
           path: release.txt
